@@ -1,0 +1,88 @@
+---
+# tasks file for alertmanager
+- name: create alertmanager system group
+  group:
+    name: "{{ alertmanager_group }}"
+    system: yes
+    state: present
+
+- name: create alertmanager system user
+  user:
+    name: "{{ alertmanager_user }}"
+    system: yes
+    shell: "/sbin/nologin"
+    group: "{{ alertmanager_group }}"
+    createhome: no
+
+- name: create alertmanager directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ alertmanager_user }}"
+    group: "{{ alertmanager_group }}"
+    mode: 0755
+  with_items:
+    - "{{ alertmanager_dir }}"
+    - "{{ alertmanager_log_dir }}"
+    - "{{ alertmanager_db_dir }}"
+    - "{{ alertmanager_pid_path }}"
+
+
+#- name: download alertmanager binary
+#  get_url:
+#    url: "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/{{ alertmanager_release_name }}.tar.gz"
+#    dest: "/var/tmp/{{ alertmanager_release_name }}.tar.gz"
+
+- name: unarchive binary tarball
+  unarchive:
+    copy: no
+    src: "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/{{ alertmanager_release_name }}.tar.gz"
+    dest: /var/tmp/
+  register: alertmanager_updated
+  notify:
+    - restart alertmanager
+
+- name: copy files from temp to alertmanager directory
+  copy:
+    src: "/var/tmp/{{ alertmanager_release_name }}/"
+    dest: "{{ alertmanager_dir }}"
+    owner: "{{ alertmanager_user }}"
+    group: "{{ alertmanager_group }}"
+    mode: preserve
+    #force: no
+    directory_mode: yes
+    remote_src: yes
+
+- name: Make binares executable
+  file:
+    path: "{{ alertmanager_dir }}/{{ item }}"
+    mode: u+x
+  with_items:
+    - alertmanager
+    - amtool
+
+- name: create systemd service unit
+  template:
+    src: alertmanager.service.j2
+    dest: /etc/systemd/system/alertmanager.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - alertmanager reenable
+    - restart alertmanager
+
+- name: ensure alertmanager service is enabled
+  service:
+    name: alertmanager
+    enabled: yes
+
+- name: update alertmanager config
+  template:
+    src: alertmanager.yml.j2
+    dest: "{{ alertmanager_dir }}/alertmanager.yml"
+    owner: "{{ alertmanager_user }}"
+    group: "{{ alertmanager_group }}"
+    mode: 0644
+  notify:
+    - reload alertmanager

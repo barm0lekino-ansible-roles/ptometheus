@@ -1,0 +1,8 @@
+---
+- name: include prometheus configuration
+  include: prometheus.yml
+  tags: prometheus
+
+- name: include alertmanager configuration
+  include: alertmanager.yml
+  tags: alertmanager

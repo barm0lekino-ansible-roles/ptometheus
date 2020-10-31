@@ -1,0 +1,28 @@
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=netwok.target
+
+[Service]
+Type=simple
+#EnvironmentFile=/etc/default/prometheus
+WorkingDirectory={{ prometheus_dir }}
+PIDFile={{ prometheus_pid_path }}
+User={{ prometheus_user }}
+Group=nogroup
+LimitNOFILE=65535
+ExecReload=/bin/kill -HUP $MAINPID
+#ExecStart=/opt/prometheus/prometheus --log.level=debug --config.file /opt/prometheus/prometheus.yml --storage.tsdb.path /var/lib/prometheus/data/ --web.console.templates /opt/prometheus/consoles --web.console.libraries /opt/prometheus/console_libraries
+
+ExecStart={{ prometheus_dir }}/prometheus \
+  --log.level=debug
+#  --config.file={{ prometheus_dir }}/prometheus.yml \
+#  --storage.tsdb.path={{ prometheus_db_dir }} \
+#  --web.console.templates={{ prometheus_db_dir }}/consoles \
+#  --web.console.libraries={{ prometheus_db_dir }}/console_libraries
+
+SyslogIdentifier=prometheus
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

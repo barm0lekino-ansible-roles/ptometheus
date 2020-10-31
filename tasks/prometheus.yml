@@ -1,0 +1,105 @@
+---
+
+- name: create prometheus system group
+  group:
+    name: "{{ prometheus_group }}"
+    system: yes
+    state: present
+
+- name: create prometheus system user
+  user:
+    name: "{{ prometheus_user }}"
+    system: yes
+    shell: "/sbin/nologin"
+    group: "{{ prometheus_group }}"
+    createhome: no
+
+- name: create prometheus directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_group }}"
+    mode: 0755
+  with_items:
+    - "{{ prometheus_dir }}"
+    - "{{ prometheus_dir }}/rules"
+    - "{{ prometheus_log_dir }}"
+    - "{{ prometheus_db_dir }}"
+
+#- name: download prometheus server binary
+#  get_url:
+#    url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/{{ prometheus_release_name }}.tar.gz"
+#    dest: "/var/tmp/{{ prometheus_release_name }}.tar.gz"
+
+- name: unarchive binary tarball to temp
+  unarchive:
+    copy: no
+    src: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/{{ prometheus_release_name }}.tar.gz"
+    #src: "/var/tmp/{{ prometheus_release_name }}.tar.gz"
+    dest: /var/tmp/
+    #creates: "{{ prometheus_dist_dir }}/{{ prometheus_release_name }}/prometheus"
+  register: prometheus_updated
+
+- name: copy files from temp to prometheus directory
+  copy:
+    src: "/var/tmp/{{ prometheus_release_name }}/"
+    dest: "{{ prometheus_dir }}"
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_group }}"
+    mode: preserve
+    #force: no
+    directory_mode: yes
+    remote_src: yes
+  notify:
+    - restart prometheus
+
+- debug: msg="copy /var/tmp/{{ prometheus_release_name }} to {{ prometheus_dir }}"
+
+# пришлось придумать костыль, т.к. при копировании слетает атрибут +x
+- name: Make binares executable
+  file:
+    path: "{{ prometheus_dir }}/{{ item }}"
+    mode: u+x
+  with_items:
+    - prometheus
+    - promtool
+
+- name: create systemd service unit
+  template:
+    src: prometheus.service.j2
+    dest: /etc/systemd/system/prometheus.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - prometheus reenable
+    - restart prometheus
+
+- name: ensure prometheus service is enabled
+  service:
+    name: prometheus
+    enabled: yes
+
+- name: copy rule files
+  copy:
+    src: "{{ item }}"
+    dest: "{{ prometheus_dir }}/rules/{{ item }}"
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_group }}"
+    mode: 0644
+    #validate: "{{ prometheus_dir }}/promtool check rules rules/{{ item }} %s"
+  with_items:
+    - "{{ prometheus_rules_files }}"
+  notify:
+    - reload prometheus
+
+- name: update prometheus config
+  template:
+    src: prometheus.yml.j2
+    dest: "{{ prometheus_dir }}/prometheus.yml"
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_group }}"
+    mode: 0644
+  notify:
+    - reload prometheus

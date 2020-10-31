@@ -1,0 +1,21 @@
+# https://awesome-prometheus-alerts.grep.to/rules
+groups:
+- name: alerts
+  rules:
+
+  - alert: InstanceDown
+    expr: up == 0
+    for: 10s
+    labels:
+      #alertname: instancedown
+      severity: "critical"
+    annotations:
+      summary: "Endpoint {{ $labels.instance }} down"
+
+  - alert: DiskSpace10%Free
+    expr: 100 - (100 * node_filesystem_avail_bytes / node_filesystem_size_bytes) >= 90
+    labels:
+      severity: "critical"
+    annotations:
+      summary: "Instance {{ $labels.instance }} is low on disk space"
+      description: "{{ $labels.instance }} has only {{ $value }}% free."

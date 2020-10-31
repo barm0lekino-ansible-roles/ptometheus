@@ -1,0 +1,39 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'email' #'web.hook'
+
+  routes:
+    - receiver: "email"
+      group_wait: 10s
+      match_re:
+        severity: critical|warning
+      continue: true
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+
+receivers:
+
+- name: 'web.hook'
+  webhook_configs:
+  - url: 'http://127.0.0.1:5001/'
+
+- name: 'email'
+  email_configs:
+  - to: admin@domain.com
+    from: alermanager@domain.com
+    smarthost: smtp.domain.com:587
+    auth_username: alermanager
+    auth_identity: alermanager@domain.com
+    auth_password: mypassword
+    send_resolved: true

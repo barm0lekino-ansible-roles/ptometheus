@@ -1,0 +1,30 @@
+---
+# defaults file for prometheus
+templates_path:
+    - templates/
+
+prometheus_version: 2.21.0
+prometheus_release_name: "prometheus-{{ prometheus_version }}.linux-amd64"
+
+prometheus_user: prometheus
+prometheus_group: prometheus
+
+prometheus_dir:         /opt/prometheus
+prometheus_log_dir:     /var/log/prometheus
+prometheus_db_dir:      /var/lib/prometheus
+prometheus_pid_path:    /var/run/prometheus.pid
+
+prometheus_rules_files:
+    - node.rules
+
+###
+alertmanager_version: 0.21.0
+alertmanager_release_name: "alertmanager-{{ alertmanager_version }}.linux-amd64"
+
+alertmanager_user: alertmanager
+alertmanager_group: alertmanager
+
+alertmanager_dir:         /opt/alertmanager
+alertmanager_log_dir:     /var/log/alertmanager
+alertmanager_db_dir:      /var/lib/alertmanager
+alertmanager_pid_path:    /var/run/alertmanager.pid
