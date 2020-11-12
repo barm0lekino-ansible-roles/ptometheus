@@ -84,5 +84,7 @@
     owner: "{{ alertmanager_user }}"
     group: "{{ alertmanager_group }}"
     mode: 0644
+  with_items:
+    - "{{ alertmanager_config_templates }}"    
   notify:
     - reload alertmanager

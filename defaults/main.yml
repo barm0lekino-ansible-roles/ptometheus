@@ -14,6 +14,8 @@ prometheus_log_dir:     /var/log/prometheus
 prometheus_db_dir:      /var/lib/prometheus
 prometheus_pid_path:    /var/run/prometheus.pid
 
+prometheus_config_templates:
+    - prometheus_def
 prometheus_rules_files:
     - node.rules
 
@@ -28,3 +30,6 @@ alertmanager_dir:         /opt/alertmanager
 alertmanager_log_dir:     /var/log/alertmanager
 alertmanager_db_dir:      /var/lib/alertmanager
 alertmanager_pid_path:    /var/run/alertmanager.pid
+
+alertmanager_config_templates:
+    - alertmanager_def
